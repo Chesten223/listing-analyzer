@@ -53,7 +53,7 @@
     <p class="subtitle">Free AI-powered analysis of your Poshmark listings. Get instant suggestions to sell faster.</p>
 
     <div class="input-group">
-      <input type="text" id="listing-url" placeholder="Paste your Poshmark listing URL (e.g. poshmark.com/listing/...)">
+      <input type="text" id="listing-url" placeholder="Paste Poshmark listing URL or paste listing title + description">
       <button class="btn btn-green" id="analyze-btn">Analyze</button>
     </div>
 
@@ -98,10 +98,14 @@
     const resultDiv = document.getElementById('result');
     analyzeBtn.addEventListener('click', async () => {
       const url = urlInput.value.trim();
-      if (!url.includes('poshmark.com/listing/')) {
-        alert('Please paste a valid Poshmark listing URL');
+      if (!url) {
+        alert('Please paste a Poshmark listing URL or listing text');
         return;
       }
+
+      // If it's a URL, extract from it; otherwise treat as raw listing text
+      const isUrl = url.includes('poshmark.com/listing/');
+      const listingText = isUrl ? url : url; // We'll send whatever user provides
 
       analyzeBtn.disabled = true;
       analyzeBtn.textContent = 'Analyzing...';
@@ -110,7 +114,7 @@
         const resp = await fetch('https://listing-analyzer-api.chesten.workers.dev/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url }),
+          body: JSON.stringify({ url, text: listingText }),
         });
 
         if (!resp.ok) throw new Error('Analysis failed');

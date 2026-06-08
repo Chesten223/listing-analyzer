@@ -18,27 +18,32 @@ export default {
     }
 
     try {
-      const { url } = await request.json();
-      if (!url || !url.includes('poshmark.com/listing/')) {
-        return jsonResponse({ error: 'Invalid Poshmark listing URL' }, 400);
+      const { url, text } = await request.json();
+
+      let listingText = text || '';
+
+      // Try to fetch via Jina Reader if it's a URL
+      if (url && url.includes('poshmark.com/listing/')) {
+        try {
+          const readerResp = await fetch(`https://r.jina.ai/${url}`, {
+            headers: { 'User-Agent': 'ListingAnalyzer/1.0' },
+            signal: AbortSignal.timeout(8000),
+          });
+          if (readerResp.ok) {
+            listingText = await readerResp.text();
+          }
+        } catch {
+          // Jina failed, use provided text or URL as-is
+          if (!listingText) listingText = url;
+        }
       }
 
-      // Fetch listing content via Jina Reader
-      const readerResp = await fetch(`https://r.jina.ai/${url}`, {
-        headers: { 'User-Agent': 'ListingAnalyzer/1.0' },
-      });
-
-      if (!readerResp.ok) {
-        return jsonResponse({ error: 'Failed to fetch listing' }, 502);
+      if (!listingText || listingText.length < 10) {
+        return jsonResponse({ error: 'Could not read listing. Try pasting the listing title and description directly.' }, 400);
       }
 
-      const listingText = await readerResp.text();
-
-      // Truncate to reasonable size
       const truncated = listingText.slice(0, 3000);
-
-      // Analyze with a simple rule-based system (no API cost!)
-      const analysis = analyzeListing(truncated, url);
+      const analysis = analyzeListing(truncated, url || '');
 
       return jsonResponse(analysis);
     } catch (err) {
