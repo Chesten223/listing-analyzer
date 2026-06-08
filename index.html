@@ -96,7 +96,6 @@
     const analyzeBtn = document.getElementById('analyze-btn');
     const urlInput = document.getElementById('listing-url');
     const resultDiv = document.getElementById('result');
-
     analyzeBtn.addEventListener('click', async () => {
       const url = urlInput.value.trim();
       if (!url.includes('poshmark.com/listing/')) {
@@ -107,39 +106,39 @@
       analyzeBtn.disabled = true;
       analyzeBtn.textContent = 'Analyzing...';
 
-      // Extract listing ID from URL
-      const match = url.match(/listing\/([^?]+)/);
-      const listingId = match ? match[1] : 'unknown';
+      try {
+        const resp = await fetch('https://listing-analyzer-api.chesten.workers.dev/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+        });
 
-      // Use AI to analyze (would be a real API call in production)
-      // For now, generate helpful analysis based on listing ID patterns
-      await new Promise(r => setTimeout(r, 1500));
+        if (!resp.ok) throw new Error('Analysis failed');
+        const data = await resp.json();
 
-      // Simulated analysis (in production, this calls your AI API)
-      const score = Math.floor(Math.random() * 30) + 55; // 55-85
+        if (data.error) { alert(data.error); return; }
 
-      const scoreCircle = document.getElementById('score-circle');
-      scoreCircle.textContent = score;
-      scoreCircle.className = 'score-circle ' + (score >= 75 ? 'score-good' : score >= 60 ? 'score-ok' : 'score-bad');
+        // Score
+        const scoreCircle = document.getElementById('score-circle');
+        scoreCircle.textContent = data.score;
+        scoreCircle.className = 'score-circle ' + (data.score >= 75 ? 'score-good' : data.score >= 60 ? 'score-ok' : 'score-bad');
+        document.getElementById('score-text').textContent = data.score >= 75 ? 'Great listing!' : data.score >= 60 ? 'Good, but can improve' : 'Needs work';
 
-      document.getElementById('score-text').textContent = score >= 75 ? 'Great listing!' : score >= 60 ? 'Good, but can improve' : 'Needs work';
+        // Sections
+        document.getElementById('title-feedback').textContent = data.title.feedback;
+        document.getElementById('title-suggestion').textContent = '💡 ' + data.title.suggestion;
+        document.getElementById('desc-feedback').textContent = data.description.feedback;
+        document.getElementById('desc-suggestion').textContent = '💡 ' + data.description.suggestion;
+        document.getElementById('price-feedback').textContent = data.pricing.feedback;
+        document.getElementById('price-suggestion').textContent = '💡 ' + data.pricing.suggestion;
+        document.getElementById('seo-feedback').textContent = data.seo.feedback;
+        document.getElementById('seo-suggestion').textContent = '💡 ' + data.seo.suggestion;
 
-      document.getElementById('title-feedback').textContent = 'Your title should include brand, size, color, and condition. Avoid all-caps and excessive exclamation marks.';
-      document.getElementById('title-suggestion').textContent = '💡 Try: "[Brand] [Item] [Color] [Size] NWT/NWOT" — e.g., "Lululemon Align Leggings Black Size 6 NWT"';
-
-      document.getElementById('desc-feedback').textContent = 'Good descriptions include measurements, fabric content, fit notes, and styling suggestions. Use bullet points for readability.';
-      document.getElementById('desc-suggestion').textContent = '💡 Add: measurements, fabric content, condition details, and why you\'re selling. Mention any flaws honestly.';
-
-      document.getElementById('price-feedback').textContent = 'Competitive pricing is key. Check similar sold listings before pricing.';
-      document.getElementById('price-suggestion').textContent = '💡 Price 10-20% above your target to allow for offers. Use the "Make an Offer" feature to close deals faster.';
-
-      document.getElementById('seo-feedback').textContent = 'Poshmark search uses title keywords and hashtags. Make sure your listing is discoverable.';
-      document.getElementById('seo-suggestion').textContent = '💡 Use all 5 hashtag slots. Include brand hashtags (#lululemon), category (#leggings), and style (#activewear). Share during Posh Parties for maximum visibility.';
-
-      resultDiv.classList.add('active');
-      analyzeBtn.disabled = false;
-      analyzeBtn.textContent = 'Analyze';
+        resultDiv.classList.add('active');
+      } catch (err) {
+        alert('Analysis failed: ' + err.message);
+      } finally {
+        analyzeBtn.disabled = false;
+        analyzeBtn.textContent = 'Analyze';
+      }
     });
-  </script>
-</body>
-</html>
