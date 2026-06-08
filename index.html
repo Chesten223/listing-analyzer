@@ -125,8 +125,11 @@
 
         if (!resp.ok) throw new Error('Analysis failed');
         const data = await resp.json();
-
-        if (data.error) { alert(data.error); return; }
+        if (data.error) {
+          resultDiv.classList.add('active');
+          resultDiv.innerHTML = '<h2>⚠️ ' + data.error + '</h2><p style="color:var(--dim);margin-top:12px">Try pasting the listing title and description directly.</p>';
+          return;
+        }
 
         // Score
         const scoreCircle = document.getElementById('score-circle');
@@ -146,7 +149,9 @@
 
         resultDiv.classList.add('active');
       } catch (err) {
-        alert('Analysis failed: ' + err.message);
+        // Show inline error instead of alert
+        resultDiv.classList.add('active');
+        resultDiv.innerHTML = '<h2>❌ Analysis Failed</h2><p style="color:var(--dim);margin-top:12px">Could not analyze the listing. Please try pasting the listing title and description directly instead of a URL.</p><p style="color:var(--dim);font-size:13px;margin-top:8px">Error: ' + err.message + '</p>';
       } finally {
         analyzeBtn.disabled = false;
         analyzeBtn.textContent = 'Analyze';
